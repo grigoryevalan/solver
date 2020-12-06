@@ -1,4 +1,4 @@
-import { convertArrayToString, convertMatrixToString } from '.';
+import { convertArrayToString, convertMatrixToString, getEmptyArray } from '.';
 import { SolutionStep } from '../features/hauss/haussSlice';
 
 export const addRow = (
@@ -140,4 +140,41 @@ export const createDiagonalMatrix = (
 		}
 	}
 	return { matrix, answers, steps };
+};
+
+export const transponate = (matrix: number[][]) => {
+	const res = matrix.slice();
+	for (let i = 0; i < matrix.length; ++i) {
+		for (let j = 0; j < matrix[i].length; ++j) {
+			res[i][j] = matrix[j][i];
+		}
+	}
+	return res;
+};
+export const multiplyMatrix = (a: number[][], b: number[][]) => {
+	const res: number[][] = [];
+
+	if (a[0].length !== b.length) {
+		throw new Error('Некорректные данные');
+	}
+
+	for (let i = 0; i < a.length; i++) {
+		res.push([]);
+	}
+
+	for (let k = 0; k < b[0].length; k++) {
+		for (let i = 0; i < a.length; i++) {
+			let sum = 0;
+			for (let j = 0; j < b.length; j++) {
+				sum += a[i][j] * b[j][k];
+			}
+			res[i].push(sum);
+		}
+	}
+
+	return res;
+};
+
+export const norm = (vector: number[]) => {
+	return Math.sqrt(vector.reduce((sum, cur) => sum + cur * cur));
 };

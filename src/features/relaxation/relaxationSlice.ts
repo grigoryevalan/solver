@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { setgroups } from 'process';
 import {
 	convertArrayToString,
 	convertMatrixToString,
@@ -9,27 +10,30 @@ import {
 import {
 	createDiagonalMatrix,
 	createEchelone,
+	multiplyMatrix,
+	norm,
 	normalizeDiagonal,
+	transponate,
 } from '../../helpers/matrix';
 
-export interface SolutionStep {
-	matrix: string[][];
-	answers: string[];
+export interface RelaxationSolutionStep {
+	R: number[];
+	X: number[];
 	label: string;
 }
 
-type HaussState = {
+type RelaxationState = {
 	matrix: string[][];
 	answers: string[];
 	columns: number;
 	rows: number;
 	error: string;
-	steps: SolutionStep[];
+	steps: RelaxationSolutionStep[];
 	stateId: number;
 	results: number[];
 };
 
-const initialState: HaussState = {
+const initialState: RelaxationState = {
 	matrix: [
 		['1', '2.1', ''],
 		['2.1', '2', '4'],
@@ -44,8 +48,8 @@ const initialState: HaussState = {
 	results: [],
 };
 
-const haussSlice = createSlice({
-	name: 'hauss',
+const relaxationSlice = createSlice({
+	name: 'relaxation',
 	initialState,
 	reducers: {
 		setItems: (state, { payload }: PayloadAction<string[][]>) => {
@@ -97,31 +101,67 @@ const haussSlice = createSlice({
 		solve: (state) => {
 			state.steps = [];
 			state.results = [];
-			let matrix = getNumericMatrix(state.matrix);
-			let answers = parseFloatArray(state.answers);
-			if (!matrix || !answers) {
-				state.error = 'Некорректные данные';
+			let matrix: number[][];
+			let answers: number[];
+			try {
+				matrix = getNumericMatrix(state.matrix);
+				answers = parseFloatArray(state.answers);
+			} catch (error) {
+				state.error = error.message;
 				return;
 			}
 			state.error = '';
 
-			const echelone = createEchelone(matrix, answers);
-			state.steps = state.steps.concat(echelone.steps);
-			matrix = echelone.matrix;
-			answers = echelone.answers;
+			let G: number[] = [];
+			let X: number[] = [];
+			let R: number[] = [];
 
-			const normalized = normalizeDiagonal(matrix, answers);
-			matrix = normalized.matrix;
-			answers = normalized.answers;
-			state.steps.push({
-				matrix: convertMatrixToString(matrix, 2),
-				answers: convertArrayToString(answers, 2),
-				label: 'Нормализируем диагональ',
-			});
+			const transponed = transponate(matrix);
+			answers = multiplyMatrix(
+				transponed,
+				answers.map((v) => [v])
+			).map((r) => r[0]);
+			matrix = multiplyMatrix(transponed, matrix);
 
-			const diag = createDiagonalMatrix(matrix, answers);
-			state.steps = state.steps.concat(diag.steps);
-			state.results = diag.answers;
+			for (let i = 0; i < state.rows; ++i) {
+				G.push(answers[i] / matrix[i][i]);
+				matrix[i] = matrix[i].map((value) => -value / matrix[i][i]);
+				X.push(0);
+				R.push(0);
+			}
+			console.log(matrix);
+
+			for (let k = 0; k < 15; ++k) {
+				const DX = multiplyMatrix(
+					matrix,
+					X.map((v) => [v])
+				).map((r) => r[0]);
+				console.log(DX, G);
+				for (let j = 0; j < state.rows; ++j) {
+					R[j] = DX[j] + G[j]; // - X[j];
+				}
+				state.steps.push({
+					label: `Итерация ${k}`,
+					R: R.slice(),
+					X: X.slice(),
+				});
+				let maxIndex = 0;
+				let maxR = -Infinity;
+				R.forEach((value, index) => {
+					if (Math.abs(value) > maxR) {
+						maxR = Math.abs(value);
+						maxIndex = index;
+					}
+				});
+				const diff = R[maxIndex] - X[maxIndex];
+				if (Math.abs(diff) / norm(X) < 1e-4) {
+					break;
+				}
+				X[maxIndex] = R[maxIndex];
+				// if (R.find((v) => Math.abs(v) > 1e-4) === undefined) {
+				// 	break;
+				// }
+			}
 		},
 	},
 });
@@ -132,6 +172,6 @@ export const {
 	resize,
 	solve,
 	setAnswer,
-} = haussSlice.actions;
+} = relaxationSlice.actions;
 
-export default haussSlice.reducer;
+export default relaxationSlice.reducer;

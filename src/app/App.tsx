@@ -1,12 +1,13 @@
 import React from 'react';
 import { Header } from '../components/Header';
-import { HaussSolver } from '../features/hauss/HaussSolver';
+import { useRoutes } from './routes';
 
 function App() {
+	const routes = useRoutes();
 	return (
 		<div className="App">
 			<Header />
-			<HaussSolver />
+			{routes}
 		</div>
 	);
 }

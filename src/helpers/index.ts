@@ -2,18 +2,18 @@ export const getEmptyArray = (size: number) => {
 	return new Array(size).fill(0);
 };
 
-export const parseFloatArray = (data: string[]): number[] | null => {
+export const parseFloatArray = (data: string[]): number[] => {
 	const result = data.map((value) => (value === '' ? 0 : parseFloat(value)));
 	if (result.find((value) => isNaN(value)) !== undefined) {
-		return null;
+		throw new Error('Некорректные данные');
 	}
 	return result;
 };
 
-export const getNumericMatrix = (matrix: string[][]): number[][] | null => {
+export const getNumericMatrix = (matrix: string[][]): number[][] => {
 	const result = matrix.map((row) => parseFloatArray(row));
 	if (result.find((value) => value === null) !== undefined) {
-		return null;
+		throw new Error('Некорректные данные матрицы');
 	}
 	return result as number[][];
 };

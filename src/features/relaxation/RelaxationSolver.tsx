@@ -4,9 +4,9 @@ import { RootState } from '../../app/rootReducer';
 import { EquationResults } from '../../components/EquationResults';
 import { MatrixForm } from '../../components/MatrixForm';
 import { MatrixResizer } from '../../components/MatrixResizer';
-import { resize, setAnswer, setItem, solve } from './haussSlice';
+import { resize, setAnswer, setItem, solve } from './relaxationSlice';
 
-export const HaussSolver = () => {
+export const RelaxationSolver = () => {
 	const {
 		matrix,
 		rows,
@@ -16,7 +16,7 @@ export const HaussSolver = () => {
 		steps,
 		stateId,
 		results,
-	} = useSelector((state: RootState) => state.hauss);
+	} = useSelector((state: RootState) => state.relaxation);
 	const dispatch = useDispatch();
 
 	const onResize = (sizes: { columns: number; rows: number }) => {
@@ -57,20 +57,17 @@ export const HaussSolver = () => {
 					</div>
 				</div>
 			)}
-			{steps.map(({ matrix, answers, label }, index) => (
+			{steps.map(({ R, X, label }, index) => (
 				<div className="row" key={`$step-${index}`}>
 					<div className="col-12">{label}</div>
-					<MatrixForm
-						matrix={matrix}
-						answers={answers}
-						onMatrixChange={onItemChange}
-						onAnswerChange={onAnswerChange}
-						readonly
-					/>
+					<div className="col">
+						<EquationResults letter="X" results={X} />
+					</div>
+					<div className="col">
+						<EquationResults letter="R" results={R} />
+					</div>
 				</div>
 			))}
-			<h3>Ответ</h3>
-			{results && <EquationResults letter="X" results={results} />}
 		</div>
 	);
 };
